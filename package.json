@@ -1,5 +1,5 @@
 {
-  "name": "b-lang",
+  "name": "@bek/b-lang",
   "version": "1.0.0",
   "description": "Lightweight backend multilanguage package with SQLite storage and batch bundle API",
   "main": "dist/index.js",
@@ -31,6 +31,9 @@
     "url": "https://github.com/Bekzod13/B-lang/issues"
   },
   "homepage": "https://github.com/Bekzod13/B-lang#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=18"
   },
