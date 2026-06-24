@@ -1,5 +1,5 @@
 {
-  "name": "@bek/b-lang",
+  "name": "@bekzod13/b-lang",
   "version": "1.0.0",
   "description": "Lightweight backend multilanguage package with SQLite storage and batch bundle API",
   "main": "dist/index.js",

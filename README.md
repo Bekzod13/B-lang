@@ -5,13 +5,13 @@ A lightweight backend multilanguage package. Stores locales, keys, and translati
 ## Installation
 
 ```bash
-npm install @bek/b-lang
+npm install @bekzod13/b-lang
 ```
 
 ## Usage
 
 ```typescript
-import { BLang } from '@bek/b-lang';
+import { BLang } from '@bekzod13/b-lang';
 
 const blang = new BLang({
   dbPath: './data/blang.sqlite',
@@ -55,7 +55,7 @@ console.log(blang.t('welcome', 'uz'));
 
 ```typescript
 import express from 'express';
-import { BLang } from '@bek/b-lang';
+import { BLang } from '@bekzod13/b-lang';
 
 const app = express();
 const blang = new BLang();
