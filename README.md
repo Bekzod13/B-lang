@@ -84,6 +84,160 @@ app.get('/api/blang/locales', (_req, res) => {
 app.listen(3000);
 ```
 
+## React frontend example (API)
+
+The frontend loads all page strings in **one request** via the bundle endpoint.
+
+### 1. API client
+
+```typescript
+// lib/blang-api.ts
+const API_URL = 'http://localhost:3000/api/blang';
+
+type BundleResponse = {
+  success: boolean;
+  data: Record<string, string>;
+  missing: string[];
+};
+
+export async function fetchLocales() {
+  const res = await fetch(`${API_URL}/locales`);
+  return res.json();
+}
+
+export async function fetchBundle(locale: string, keys: string[]) {
+  const res = await fetch(`${API_URL}/bundle`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ locale, keys }),
+  });
+
+  const json = (await res.json()) as BundleResponse;
+  return json.data;
+}
+```
+
+### 2. React context + hook
+
+```tsx
+// context/BLangProvider.tsx
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
+import { fetchBundle } from '../lib/blang-api';
+
+type BLangContextValue = {
+  locale: string;
+  setLocale: (locale: string) => void;
+  t: (key: string) => string;
+  loading: boolean;
+};
+
+const BLangContext = createContext<BLangContextValue | null>(null);
+
+const PAGE_KEYS = ['welcome', 'login', 'footer'];
+
+export function BLangProvider({ children }: { children: ReactNode }) {
+  const [locale, setLocale] = useState('en');
+  const [translations, setTranslations] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    async function load() {
+      setLoading(true);
+      const data = await fetchBundle(locale, PAGE_KEYS);
+      if (active) {
+        setTranslations(data);
+        setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, [locale]);
+
+  const t = useCallback(
+    (key: string) => translations[key] ?? key,
+    [translations],
+  );
+
+  const value = useMemo(
+    () => ({ locale, setLocale, t, loading }),
+    [locale, t, loading],
+  );
+
+  return (
+    <BLangContext.Provider value={value}>{children}</BLangContext.Provider>
+  );
+}
+
+export function useBLang() {
+  const ctx = useContext(BLangContext);
+  if (!ctx) {
+    throw new Error('useBLang must be used within BLangProvider');
+  }
+  return ctx;
+}
+```
+
+### 3. Page component
+
+```tsx
+// App.tsx
+import { BLangProvider, useBLang } from './context/BLangProvider';
+
+function HomePage() {
+  const { locale, setLocale, t, loading } = useBLang();
+
+  if (loading) {
+    return <p>Loading translations...</p>;
+  }
+
+  return (
+    <main>
+      <h1>{t('welcome')}</h1>
+      <button>{t('login')}</button>
+      <footer>{t('footer')}</footer>
+
+      <div>
+        <button onClick={() => setLocale('en')}>English</button>
+        <button onClick={() => setLocale('uz')}>O'zbekcha</button>
+        <button onClick={() => setLocale('ru')}>Русский</button>
+      </div>
+
+      <p>Current locale: {locale}</p>
+    </main>
+  );
+}
+
+export default function App() {
+  return (
+    <BLangProvider>
+      <HomePage />
+    </BLangProvider>
+  );
+}
+```
+
+### How it works
+
+1. Backend exposes `POST /api/blang/bundle` (see Express example above).
+2. On mount or locale change, React sends **one request** with all required keys.
+3. `t('key')` reads from in-memory state — no extra API calls per string.
+4. Switching locale triggers a new bundle fetch for the selected language.
+
+> **Tip:** For production, add CORS on the backend (`cors` package) and point `API_URL` to your real API host.
+
 ## API
 
 | Method | Description |
